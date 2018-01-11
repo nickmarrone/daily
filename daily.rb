@@ -3,12 +3,19 @@
 require 'highline'
 require 'json'
 require 'chronic'
+require 'optparse'
 
 def main
+	journal_location = 'journal.json'
+	OptionParser.new do |opts|
+		opts.banner = "Usage: daily.rb [options]"
+		opts.on('-j', '--journal FILENAME', String, 'Journal location') { |v| journal_location = v }
+	end.parse!
+
 	cli = HighLine.new
 	cli.say "Welcome to Daily journal editor.\n\n"
 
-	entries = load_entries
+	entries = load_entries(journal_location)
 	new_entries = []
 
 	loop do
@@ -26,7 +33,7 @@ def main
 			end
 			
 			menu.choice('Exit') do
-				output_new_entries(new_entries)
+				output_new_entries(new_entries, journal_location)
 				exit(0)
 			end
 		end
@@ -51,10 +58,10 @@ def view_entries(cli, entries)
 	puts "\n"
 end
 
-def load_entries
+def load_entries(location)
 	entries = Hash.new{ |h, k| h[k] = [] }
-	if File.exist?('journal.json')
-		File.open('journal.json').each do |line|
+	if File.exist?(location)
+		File.open(location).each do |line|
 			entry = JSON.parse(line)
 			entries[entry['date']] << entry
 		end
@@ -63,8 +70,8 @@ def load_entries
 	entries
 end
 
-def output_new_entries(entries)
-	File.open('journal.json', 'a') do |out|
+def output_new_entries(entries, location)
+	File.open(location, 'a') do |out|
 		entries.each do |entry|		
 			out.puts entry.to_json
 		end
